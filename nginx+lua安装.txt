@@ -1,0 +1,58 @@
+yum install make gcc wget pcre-devel zlib-devel unzip -y
+
+
+#luajit安装
+cd /mnt
+wget https://codeload.github.com/openresty/luajit2/tar.gz/v2.1-20190626
+tar zxvf v2.1-20190626
+cd luajit2-2.1-20190626
+make install PREFIX=/usr/local/luajit
+echo "/usr/local/luajit/lib">/etc/ld.so.conf.d/usr_local_luajit_lib.conf
+export LUAJIT_LIB=/usr/local/luajit/lib
+export LUAJIT_INC=/usr/local/luajit/include/luajit-2.1
+ldconfig
+cd ..
+
+wget https://codeload.github.com/simplresty/ngx_devel_kit/tar.gz/v0.3.1rc1  
+wget https://codeload.github.com/openresty/lua-nginx-module/tar.gz/v0.10.15
+tar zxvf v0.10.15
+tar zxvf v0.3.1rc1
+
+wget http://nginx.org/download/nginx-1.16.0.tar.gz
+tar zxvf nginx-1.16.0.tar.gz
+cd nginx-1.16.0
+./configure --add-module=../ngx_devel_kit-0.3.1rc1/ --add-module=../lua-nginx-module-0.10.15/
+make
+make install
+cd ..
+
+
+cd /usr/local/nginx
+mkdir lua
+cd lua
+wget https://codeload.github.com/openresty/lua-resty-core/zip/master
+unzip master
+rm -rf master
+
+wget https://codeload.github.com/openresty/lua-resty-lrucache/zip/master
+unzip master
+rm -rf master
+
+vim nginx.conf
+在http目录添加下句
+lua_package_path "/usr/local/nginx/lua/lua-resty-lrucache-master/lib/?.lua;/usr/local/nginx/lua/lua-resty-core-master/lib/?.lua;;";
+
+        location /lua-version {
+                content_by_lua '
+                        if jit then
+                                ngx.say(jit.version)
+                        else
+                                ngx.say(_VERSION)
+                        end
+                ';
+        }
+访问验证  curl 127.0.0.1/lua-version
+显示LuaJIT 2.1.0-beta3即为安装成功
+
+
+
